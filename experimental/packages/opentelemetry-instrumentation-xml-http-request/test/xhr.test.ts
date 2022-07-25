@@ -789,6 +789,24 @@ describe('xhr', () => {
           });
         });
 
+        describe('when ignoreNetworkEvents is set to true', () => {
+          beforeEach(done => {
+            clearData();
+            const propagateTraceHeaderCorsUrls = url;
+            prepareData(done, url, {
+              propagateTraceHeaderCorsUrls,
+              ignoreNetworkEvents: true,
+            });
+          });
+
+          it('span should not have network events', () => {
+            const span: tracing.ReadableSpan = exportSpy.args[1][0][0];
+            const events = span.events;
+
+            assert.strictEqual(events.length, 3, 'number of events is wrong');
+          });
+        });
+
       });
 
       describe('when request is NOT successful', () => {

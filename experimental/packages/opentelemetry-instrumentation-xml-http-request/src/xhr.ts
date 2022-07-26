@@ -76,6 +76,8 @@ export interface XMLHttpRequestInstrumentationConfig
   applyCustomAttributesOnSpan?: XHRCustomAttributeFunction;
   /** Ignore adding network events as span events */
   ignoreNetworkEvents?: boolean;
+  /** Function for accessing tracing service's activeRootSpan */
+  getActiveRootSpan?: () => api.Span;
 }
 
 /**
@@ -341,13 +343,22 @@ export class XMLHttpRequestInstrumentation extends InstrumentationBase<XMLHttpRe
     }
     const spanName = `HTTP ${method.toUpperCase()}`;
 
-    const currentSpan = this.tracer.startSpan(spanName, {
-      kind: api.SpanKind.CLIENT,
-      attributes: {
-        [SemanticAttributes.HTTP_METHOD]: method,
-        [SemanticAttributes.HTTP_URL]: url,
+    let parentContext;
+    const config = this._getConfig();
+    if (config.getActiveRootSpan) {
+      parentContext = api.trace.setSpan(api.context.active(), config.getActiveRootSpan());
+    }
+    const currentSpan = this.tracer.startSpan(
+      spanName,
+      {
+        kind: api.SpanKind.CLIENT,
+        attributes: {
+          [SemanticAttributes.HTTP_METHOD]: method,
+          [SemanticAttributes.HTTP_URL]: url,
+        },
       },
-    });
+      parentContext,
+    );
 
     currentSpan.addEvent(EventNames.METHOD_OPEN);
 

@@ -346,7 +346,13 @@ export class XMLHttpRequestInstrumentation extends InstrumentationBase<XMLHttpRe
     let parentContext;
     const config = this._getConfig();
     if (config.getActiveRootSpan) {
-      parentContext = api.trace.setSpan(api.context.active(), config.getActiveRootSpan());
+      const activeRootSpan = config.getActiveRootSpan();
+      if (!activeRootSpan) {
+        // We have a callback option to get the active root span but it is not present.
+        // In this case we don't want to create a dangling XHR span not attached to anything.
+        return;
+      }
+      parentContext = api.trace.setSpan(api.context.active(), activeRootSpan);
     }
     const currentSpan = this.tracer.startSpan(
       spanName,

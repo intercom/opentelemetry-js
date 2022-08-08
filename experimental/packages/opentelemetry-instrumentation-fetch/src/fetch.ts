@@ -65,6 +65,8 @@ export interface FetchInstrumentationConfig extends InstrumentationConfig {
   applyCustomAttributesOnSpan?: FetchCustomAttributeFunction;
   // Ignore adding network events as span events
   ignoreNetworkEvents?: boolean;
+  /** Function for accessing tracing service's activeRootSpan */
+  getActiveRootSpan?: () => api.Span;
 }
 
 /**
@@ -200,6 +202,19 @@ export class FetchInstrumentation extends InstrumentationBase<Promise<Response>>
     }
     const method = (options.method || 'GET').toUpperCase();
     const spanName = `HTTP ${method}`;
+
+    let parentContext;
+    const config = this._getConfig();
+    if (config.getActiveRootSpan) {
+      const activeRootSpan = config.getActiveRootSpan();
+      if (!activeRootSpan) {
+        // We have a callback option to get the active root span but it is not present.
+        // In this case we don't want to create a dangling XHR span not attached to anything.
+        return;
+      }
+      parentContext = api.trace.setSpan(api.context.active(), activeRootSpan);
+    }
+
     return this.tracer.startSpan(spanName, {
       kind: api.SpanKind.CLIENT,
       attributes: {
@@ -207,7 +222,7 @@ export class FetchInstrumentation extends InstrumentationBase<Promise<Response>>
         [SemanticAttributes.HTTP_METHOD]: method,
         [SemanticAttributes.HTTP_URL]: url,
       },
-    });
+    }, parentContext);
   }
 
   /**

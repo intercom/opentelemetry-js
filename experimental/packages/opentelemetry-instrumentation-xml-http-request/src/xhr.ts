@@ -78,6 +78,8 @@ export interface XMLHttpRequestInstrumentationConfig
   ignoreNetworkEvents?: boolean;
   /** Function for accessing tracing service's activeRootSpan */
   getActiveRootSpan?: () => api.Span;
+  /** Ignore XHR events (e.g. open, send) */
+  ignoreXhrEvents?: boolean;
 }
 
 /**
@@ -366,7 +368,9 @@ export class XMLHttpRequestInstrumentation extends InstrumentationBase<XMLHttpRe
       parentContext,
     );
 
-    currentSpan.addEvent(EventNames.METHOD_OPEN);
+    if (!this._getConfig().ignoreXhrEvents) {
+      currentSpan.addEvent(EventNames.METHOD_OPEN);
+    }
 
     this._cleanPreviousSpanInformation(xhr);
 
@@ -434,7 +438,9 @@ export class XMLHttpRequestInstrumentation extends InstrumentationBase<XMLHttpRe
           sendStartTime,
           endTime
         );
-        span.addEvent(eventName, endTime);
+        if (!plugin._getConfig().ignoreXhrEvents) {
+          span.addEvent(eventName, endTime);
+        }
         plugin._addFinalSpanAttributes(span, xhrMem, spanUrl);
         span.end(endTime);
         plugin._tasksCount--;
@@ -510,7 +516,10 @@ export class XMLHttpRequestInstrumentation extends InstrumentationBase<XMLHttpRe
             () => {
               plugin._tasksCount++;
               xhrMem.sendStartTime = hrTime();
-              currentSpan.addEvent(EventNames.METHOD_SEND);
+
+              if (!plugin._getConfig().ignoreXhrEvents) {
+                currentSpan.addEvent(EventNames.METHOD_SEND);
+              }
 
               this.addEventListener('abort', onAbort);
               this.addEventListener('error', onError);

@@ -63,7 +63,12 @@ export function addSpanNetworkEvent(
     hasKey(entries, performanceName) &&
     typeof entries[performanceName] === 'number'
   ) {
-    span.addEvent(performanceName, entries[performanceName]);
+    const eventTime = entries[performanceName];
+    const fetchStartTime = entries[PTN.FETCH_START];
+    if (eventTime && fetchStartTime) {
+      const normalizedDuration = Math.round(eventTime - fetchStartTime);
+      span.setAttribute(`network.${performanceName}_ms`, normalizedDuration);
+    }
     return span;
   }
   return undefined;

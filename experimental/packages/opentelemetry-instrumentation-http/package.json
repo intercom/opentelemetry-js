@@ -56,7 +56,7 @@
     "@types/semver": "7.3.9",
     "@types/sinon": "10.0.6",
     "@types/superagent": "4.1.13",
-    "axios": "1.15.0",
+    "axios": "1.16.0",
     "codecov": "3.8.3",
     "got": "11.8.5",
     "mocha": "7.2.0",
